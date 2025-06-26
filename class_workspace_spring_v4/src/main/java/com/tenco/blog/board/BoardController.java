@@ -1,18 +1,20 @@
 package com.tenco.blog.board;
 
+import com.tenco.blog._core.errors.exception.Exception403;
+import com.tenco.blog._core.errors.exception.Exception404;
 import com.tenco.blog.user.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.security.PublicKey;
 import java.util.List;
 
 @Controller
@@ -20,11 +22,14 @@ import java.util.List;
 public class BoardController {
 
     private final BoardRepository boardRepository;
+    private static final Logger log = LoggerFactory.getLogger(BoardController.class);
 
     // 전체 게시물 조회
     @GetMapping("/")
     public String index(HttpServletRequest request) {
 
+        log.info("메인 페이지 요청");
+        
         // 1. 게시글 목록 조회
         List<Board> boards = boardRepository.findByAll();
         request.setAttribute("boardList", boards);
@@ -35,8 +40,11 @@ public class BoardController {
     @GetMapping("/board/{id}")
     public String detail(@PathVariable(name = "id") Long id, HttpServletRequest request) {
 
+        log.info("상세 페이지 요청 ID : {}",id);
+        
         // 1. 게시글 상세 조회
         Board board = boardRepository.findById(id);
+        log.info("상세 페이지 조회 완료 제목 : {} , 유저 : {}",board.getTitle() , id);
         request.setAttribute("board", board);
         return "board/detail";
     }
@@ -44,10 +52,9 @@ public class BoardController {
 
     @GetMapping("/board/save-form")
     public String saveForm(HttpSession session) {
-        User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            return "redirect:/login-form";
-        }
+
+        log.info("로그인 작성하는 화면 요청");
+
         // 로그인된 사용자만 이동
         return "board/save-form";
     }
@@ -55,23 +62,17 @@ public class BoardController {
     // 게시글 저장 액션
     @PostMapping("/board/save")
     public String save(BoardRequest.SaveDTO saveDTO, HttpSession session) {
-        try {
-            User sessionUser = (User) session.getAttribute("sessionUser");
-            if (sessionUser == null) {
-                // 로그인 안한 경우 다시 로그인페이지로 리다이렉트처리
-                return "redirect:/login-form";
-            }
-            saveDTO.validate();
 
-            // SaveDTO --> 저장시키기 위헤 --> Board 변환을 해 주어야 함
-            boardRepository.save(saveDTO.toEntity(sessionUser));
+        log.info("로그인 작성 기능 요청 - 제목 {} :" , saveDTO.getTitle());
+        
+        User sessionUser = (User) session.getAttribute("sessionUser");
 
-            return "redirect:/";
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("오류 발생 워리워링월9잉");
-            return "redirect:/";
-        }
+        saveDTO.validate();
+
+        // SaveDTO --> 저장시키기 위헤 --> Board 변환을 해 주어야 함
+        boardRepository.save(saveDTO.toEntity(sessionUser));
+
+        return "redirect:/";
     }
 
 //    @PostMapping("/board/save")
@@ -99,14 +100,13 @@ public class BoardController {
         User sessionUser = (User) httpSession.getAttribute("sessionUser");
         Board board = boardRepository.findById(id);
 
+        log.info("게시글 수정 폼 요청 - boardId : {}" , id);
+
         if (board == null) {
-            throw new IllegalArgumentException("존재 하지 않는 게시물입니다");
-        }
-        if(sessionUser == null) {
-            throw new IllegalArgumentException("로그인 해주시기 바랍니다");
+            throw new Exception404("존재 하지 않는 게시물입니다");
         }
         if(!board.isOwner(sessionUser.getId())){
-            throw new IllegalArgumentException("수정 권한이 없습니다");
+            throw new Exception403("게시글 수정 권한이 없습니다");
         }
 
         request.setAttribute("board", board);
@@ -125,14 +125,15 @@ public class BoardController {
                          HttpSession httpSession) {
         User sessionUser = (User) httpSession.getAttribute("sessionUser");
         Board board = boardRepository.findById(id);
+
+        log.info("게시글 수정 기능 요청 - boardId : {} , 새 제목 : {}" , id,updateDTO.getTitle());
+
         if (board == null) {
-            throw new IllegalArgumentException("존재 하지 않는 게시물입니다");
+            throw new Exception404("존재 하지 않는 게시물입니다");
         }
-        if(sessionUser == null) {
-            throw new IllegalArgumentException("로그인 해주시기 바랍니다");
-        }
+
         if(!board.isOwner(sessionUser.getId())){
-            throw new IllegalArgumentException("수정 권한이 없습니다");
+            throw new Exception403("게시글 수정 권한이 없습니다");
         }
         boardRepository.update(id, updateDTO);
         return "redirect:/board/" + id;
@@ -140,23 +141,21 @@ public class BoardController {
 
     @PostMapping("/board/{id}/delete-form")
     public String delete(@PathVariable(name = "id") Long id, HttpSession httpSession, Model model, RedirectAttributes redirectAttributes) {
-        User sessionUser = (User) httpSession.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            redirectAttributes.addAttribute("loginError", true);
-            return "redirect:/login-form";
-        }
+
+        log.info("게시글 삭제 기능 요청 - boardId : {}" , id);
         Board board = boardRepository.findById(id);
+
+        User sessionUser = (User) httpSession.getAttribute("sessionUser");
+
         if (board == null) {
-            throw new IllegalArgumentException("이미 삭제된 게시물 입니다");
+            throw new Exception404("존재 하지 않는 게시물입니다");
         }
+
         if(!board.isOwner(sessionUser.getId())){
-            throw new IllegalArgumentException("삭제 권한이 없습니다");
+            throw new Exception403("게시글 수정 권한이 없습니다");
         }
         boardRepository.deleteById(id);
         return "redirect:/";
     }
-
-
-
 
 }

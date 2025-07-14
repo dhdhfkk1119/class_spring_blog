@@ -61,9 +61,11 @@ public class BoardService {
                     log.info("게시글 조회 실패 - ID {}", id);
                     return new Exception404("해당페이지를 찾을수없습니다");
                 });
+
         if(!board.isOwner(sessionUser.getId())){
             throw new Exception403("수정 권한이없습니다");
         }
+
         board.setTitle(updateDTO.getTitle());
         board.setContent(updateDTO.getContent());
         boardJpaRepository.save(board);

@@ -1,5 +1,7 @@
 package com.tenco.blog.user;
 
+import com.tenco.blog.board.BoardRequest;
+import com.tenco.blog.board.BoardResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +46,7 @@ public class UserRestController {
         UserResponse.LoginDTO loginDTO = userService.login(reqDto);
         httpSession.setAttribute(Define.SESSION_USER, loginDTO);
 
+
         return ResponseEntity.ok(new ApiUtil<>(loginDTO));
     }
 
@@ -82,5 +85,5 @@ public class UserRestController {
                 .status(HttpStatus.OK)
                 .body(new ApiUtil<>(userResponse));
     }
-    
+
 }

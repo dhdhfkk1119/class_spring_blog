@@ -19,7 +19,7 @@ public interface BoardJpaRepository extends JpaRepository<Board, Long> {
     // 게시글과 사용자 정보가 포함된 엔티를 만들어 주어야 한다. (게시글 리스트 용)
     @Query("SELECT b FROM Board b JOIN FETCH b.user u ORDER BY b.id DESC")
     Page<Board> findAllJoinUser(Pageable pageable);
-//    List<Board> findAllJoinUser();
+    // List<Board> findAllJoinUser();
     // JOIN FETCH 는 모든 Board 엔티티와 연관괸 User 를 한방 쿼리로 가져 옴
     // LAZY 전략이라서 N + 1 방지를 할 수 있다
     // : 게시글 10개가 있다면 지연 로딩 1(Board 조회) + 10(User 조회) = 11번 쿼리가 발생

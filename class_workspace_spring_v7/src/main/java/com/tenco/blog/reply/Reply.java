@@ -4,6 +4,7 @@ import com.tenco.blog.board.Board;
 import com.tenco.blog.user.User;
 import com.tenco.blog.utils.MyDateUtil;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +16,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @Table(name = "reply_tb")
 @Entity
+@AllArgsConstructor
 public class Reply {
 
     @Id
